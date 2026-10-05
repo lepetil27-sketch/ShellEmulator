@@ -3,7 +3,10 @@ import getpass
 import socket
 
 from src.parser import parse_command
-from src.commands import COMMANDS
+from src.commands import COMMANDS, set_vfs
+from src.config import parse_args, validate_config
+from src.vfs import VirtualFileSystem
+from src.script_runner import run_script
 
 
 def get_prompt() -> str:
@@ -64,5 +67,33 @@ def run_repl() -> None:
             break
 
 
-if __name__ == "__main__":
+def main() -> None:
+    args = parse_args()
+
+    try:
+        validate_config(args)
+    except FileNotFoundError as exc:
+        print(f"Ошибка конфигурации: {exc}")
+        return
+
+    vfs = VirtualFileSystem(args.vfs)
+    set_vfs(vfs)
+
+    print("=== Конфигурация эмулятора ===")
+    print(f"Путь к VFS: {args.vfs or '(не указан, используется текущая)'}")
+    print(f"Скрипт: {args.script or '(не указан, интерактивный режим)'}")
+    print("==============================\n")
+
+    if args.script:
+        print(f"Выполнение скрипта: {args.script}\n")
+        success = run_script(args.script)
+        if not success:
+            print("\nСкрипт завершён с ошибкой.")
+        else:
+            print("\nСкрипт выполнен успешно.")
+        return
     run_repl()
+
+
+if __name__ == "__main__":
+    main()
